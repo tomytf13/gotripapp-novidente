@@ -13,7 +13,9 @@ const io = socketIo(server, { cors: { origin: "*" } });
 
 const port = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
+
+//app.use(cors());
 app.use(express.json());
 
 /** 🌟 SECCIÓN DE EMERGENCIAS: LLAMADA Y MENSAJE DE TEXTO 🌟 */
