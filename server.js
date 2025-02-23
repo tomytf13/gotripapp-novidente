@@ -192,7 +192,7 @@ io.on("connection", (socket) => {
         }
 
         socket.emit("respuesta", {
-            respuesta: `Destino encontrado: ${destinoFinal.nombre}. Puedes iniciar el recorrido.`,
+            respuesta: `Destino encontrado: ${destinoFinal.nombre}. Puedes iniciar el recorrido, presiona el boton comenzar recorrido para iniciar la guía.`,
             destino: destinoFinal,
             ruta: rutaGenerada
         });
@@ -201,7 +201,7 @@ io.on("connection", (socket) => {
     // 🚨 Comando "siguiente paso"
     socket.on("siguiente_paso", () => {
         if (!rutaGenerada || indicePaso >= rutaGenerada.length - 1) {
-            socket.emit("respuesta", { respuesta: "🏁 ¡Has llegado a tu destino!" });
+            socket.emit("respuesta", { respuesta: "¡Has llegado a tu destino! Que lo disfrutes mucho." });
             destinoFinal = null;
             rutaGenerada = null;
             indicePaso = 0;
@@ -213,48 +213,49 @@ io.on("connection", (socket) => {
     });
 
     // 🚀 Comando "repetir paso"
-socket.on("repetir_paso", () => {
-    if (rutaGenerada && indicePaso < rutaGenerada.length) {
-        socket.emit("respuesta", { respuesta: `Repetimos: ${rutaGenerada[indicePaso]}` });
-    }
-});
+    socket.on("repetir_paso", () => {
+        if (rutaGenerada && indicePaso < rutaGenerada.length) {
+            socket.emit("respuesta", { respuesta: `Repetimos: ${rutaGenerada[indicePaso]}` });
+        }
+    });
 
-   // 🚀 Comando "detalles del destino" con reconocimiento más flexible
-socket.on("detalles_destino", async () => {
-    if (!destinoFinal) {
-        socket.emit("respuesta", { respuesta: "Aún no has seleccionado un destino. Encuentra un destino primero." });
-        return;
-    }
+    // 🚀 Comando "detalles del destino" con reconocimiento más flexible
+    socket.on("detalles_destino", async () => {
+        if (!destinoFinal) {
+            socket.emit("respuesta", { respuesta: "Aún no has seleccionado un destino. Encuentra un destino primero." });
+            return;
+        }
 
-    console.log(`❓ Usuario preguntó sobre el destino: ${destinoFinal.nombre}`);
+        console.log(`❓ Usuario preguntó sobre el destino: ${destinoFinal.nombre}`);
 
-    try {
-        const respuestaIA = await openai.chat.completions.create({
-            model: "gpt-4-turbo",
-            messages: [
-                { role: "user", content: `Un usuario no vidente está visitando ${destinoFinal.nombre} en San Miguel de Tucumán.` },
-                { role: "user", content: `Quiere saber más información sobre este lugar. 
+        try {
+            const respuestaIA = await openai.chat.completions.create({
+                model: "gpt-4-turbo",
+                messages: [
+                    { role: "user", content: `Un usuario no vidente está visitando ${destinoFinal.nombre} en San Miguel de Tucumán.` },
+                    {
+                        role: "user", content: `Quiere saber más información sobre este lugar. 
                   Proporciónale una respuesta clara, interesante y útil.` }
-            ],
-            max_tokens: 1000,
-        });
+                ],
+                max_tokens: 1000,
+            });
 
-        socket.emit("respuesta", { respuesta: respuestaIA.choices[0].message.content.trim() });
-    } catch (error) {
-        console.error("❌ Error respondiendo sobre el destino:", error);
-        socket.emit("respuesta", { respuesta: "No pude obtener información sobre el destino en este momento." });
-    }
-});
+            socket.emit("respuesta", { respuesta: respuestaIA.choices[0].message.content.trim() });
+        } catch (error) {
+            console.error("❌ Error respondiendo sobre el destino:", error);
+            socket.emit("respuesta", { respuesta: "No pude obtener información sobre el destino en este momento." });
+        }
+    });
 
-socket.on("comenzar_recorrido", () => {
-    if (!rutaGenerada || rutaGenerada.length === 0) {
-        socket.emit("respuesta", { respuesta: "No hay una ruta generada. Encuentra un destino primero." });
-        return;
-    }
+    socket.on("comenzar_recorrido", () => {
+        if (!rutaGenerada || rutaGenerada.length === 0) {
+            socket.emit("respuesta", { respuesta: "No hay una ruta generada. Encuentra un destino primero." });
+            return;
+        }
 
-    indicePaso = 0; // Reiniciamos el índice del paso
-    socket.emit("respuesta", { respuesta: `El recorrido ha iniciado. Primer paso: ${rutaGenerada[indicePaso]}` });
-});
+        indicePaso = 0; // Reiniciamos el índice del paso
+        socket.emit("respuesta", { respuesta: `El recorrido ha iniciado. Primer paso: ${rutaGenerada[indicePaso]}` });
+    });
 
     socket.on("disconnect", () => {
         console.log("🔴 Usuario desconectado:", socket.id);
